@@ -34,7 +34,7 @@ export default Component.extend(RippleMixin, ParentMixin, {
     'hasProxiedComponent:md-proxy-focus', 'shouldBeClickable:md-clickable',
     'focused:md-focused', 'hasPrimaryAction:_md-button-wrap'
   ],
-  attributeBindings: ['role', 'tabindex'],
+  attributeBindings: ['role', 'tabindex', 'title'],
   role: 'listitem',
   tabindex: '-1',
 

@@ -32,11 +32,13 @@
         {{#paper-autocomplete
           options=options
           closeOnSelect=true
+          defaultHighlighted=defaultHighlighted
           placeholder=placeholder
           searchField=searchField
           search=search
           matcher=matcher
           noMatchesMessage=noMatchesMessage
+          searchText=(readonly searchText)
           onBlur=(action "inputBlur")
           onSelectionChange=(action "autocompleteChange")
           onSearchTextChange=(action "searchTextChange")
