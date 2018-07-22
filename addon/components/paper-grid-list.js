@@ -47,9 +47,11 @@ export default Component.extend(ParentMixin, {
     this._installMediaListener();
   },
 
-  didUpdateAttrs() {
+  didUpdate() {
     this._super(...arguments);
-    this.updateGrid();
+
+    // Debounces until the next run loop
+    run.debounce(this, this.updateGrid, 0);
   },
 
   willDestroyElement() {
@@ -71,8 +73,8 @@ export default Component.extend(ParentMixin, {
         this._mediaDidChange(mediaName, result.matches);
       }));
 
-      // Calls '_mediaDidChange' once
-      this[listenerName](mediaList);
+      // Trigger initial grid calculations
+      this._mediaDidChange(mediaName, mediaList.matches);
 
       mediaList.addListener(this[listenerName]);
     }
@@ -88,23 +90,22 @@ export default Component.extend(ParentMixin, {
 
   _mediaDidChange(mediaName, matches) {
     this.set(mediaName, matches);
-    run.debounce(this, this._updateCurrentMedia, 50);
+    
+    // Debounces until the next run loop
+    run.debounce(this, this._updateCurrentMedia, 0);
   },
 
   _updateCurrentMedia() {
     let mediaPriorities = this.get('constants.MEDIA_PRIORITY');
-    let currentMedia = mediaPriorities.filter((mediaName) => {
-      return this.get(mediaName);
-    });
+    let currentMedia = mediaPriorities.filter((mediaName) => this.get(mediaName));
     this.set('currentMedia', currentMedia);
     this.updateGrid();
+    this.sendAction('onUpdate');
   },
 
   updateGrid() {
     this.$().css(this._gridStyle());
-    this.get('tiles').forEach((tile) =>  {
-      tile.$().css(tile._tileStyle());
-    });
+    this.get('tiles').forEach((tile) => tile.updateTile());
   },
 
   _gridStyle() {
@@ -135,7 +136,8 @@ export default Component.extend(ParentMixin, {
         break;
       }
       case 'fit': {
-        // noop, as the height is user set
+        // rowHeight is container height
+        style.height = '100%';
         break;
       }
     }
@@ -145,14 +147,20 @@ export default Component.extend(ParentMixin, {
 
   // Calculates tile positions
   _setTileLayout() {
-    let tiles = this.get('tiles');
+    let tiles = this.orderedTiles();
     let layoutInfo = gridLayout(this.get('currentCols'), tiles);
 
-    tiles.forEach((tile, i) => {
-      tile.set('position', layoutInfo.positions[i]);
-    });
+    tiles.forEach((tile, i) => tile.set('position', layoutInfo.positions[i]));
 
     this.set('rowCount', layoutInfo.rowCount);
+  },
+
+  // Sorts tiles by their order in the dom
+  orderedTiles() {
+    let domTiles = this.$('md-grid-tile').toArray();
+    return this.get('tiles').sort((a, b) => {
+      return domTiles.indexOf(a.get('element')) > domTiles.indexOf(b.get('element')) ? 1 : -1;
+    });
   },
 
   // Parses attribute string and returns hash of media sizes
